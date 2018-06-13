@@ -1,0 +1,9 @@
+
+
+Bei separierten Filtermasken [A x B] , [C x B] beträgt die Laufzeit O(M*N(A*B+C*B))
+
+S_x = [1; 2; 1] *  [1, 0, -1];
+S_y = [1; 0; -1] * [1, 2, 1];
+
+Hier bei wäre der Rechenaufwand O(M*N*(2*6)) statt O(M*N*(2*9))
+
