@@ -1,110 +1,168 @@
-// =============================================================================
-//  PRaGMA is a library of Pattern Recognition and Graph Matching Algorithms.
-// =============================================================================
-//  Copyright 2007-2014 Institut fuer Neuroinformatik, Ruhr-Universitaet Bochum
-//
-//  This file is part of PRaGMA.
-//  PRaGMA is free software: you can redistribute it and/or modify it under
-//  the terms of the GNU Lesser General Public License as published by the
-//  Free Software Foundation, either version 3 of the License, or (at your
-//  option) any later version.
-//  PRaGMA is distributed in the hope that it will be useful, but WITHOUT
-//  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-//  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
-//  License for more details.
-//  You should have received a copy of the GNU Lesser General Public License
-//  along with this program. If not, see <http://www.gnu.org/licenses/>.
-//
-// =============================================================================
-//
-//  Author:   Andreas Nilkens
-//
-//  Email:    andreas.nilkens@ini.rub.de
-//
-//  Address:  Ruhr-Universitaet Bochum
-//            Institut fuer Neuroinformatik
-//            Universitaetsstr. 150
-//            D-44801 Bochum, Germany
-//
-// ===========================================================================
-//
-//! \file     ./programs/task/Zettel6/main.cpp
-//! \ingroup  ./programs/task
-//
-// ===========================================================================
-//
-//  $HeadURL$
-//  $Revision$
-//  $Date$
-//  $Author$
-//
-// ===========================================================================
-// ===========================================================================
-
-// ---- local includes -------------------------------------------------------
-#include "ImageManipulator.h"
-
-// ---- global includes ------------------------------------------------------
 #include <pragma.h>
 #include <iostream>
+#include "ImageManipulator.h"
 
-// ---- constants ------------------------------------------------------------
+/* Hinweis:
+Da die Aufgaben ineinander uebergehen, gibt es bei dieser Vorlage keine klare Unterteilung in 6.1.1 und 6.1.2. 
+Es sollen keine weiteren Dateien included werden (auch nicht Faltung.h). Der entsprechende Code wird in die falte()-Funktion eingefuegt und die
+ImageManipulator.h bzw. .cpp muessen mit hochgeladen werden, da die Abgabe sonst nicht korrigiert werden kann.
+Denken Sie daran, verschiedene Rauschstaerken und Skalierungen auszuprobieren und die entsprechenden Fragen fuer 6.1.2 und 6.1.3 zu beantworten.
+*/
 
-// ---- typedefs -------------------------------------------------------------
-
-// ---- external functions ---------------------------------------------------
-
-
-/*************************************************************************//*!
-
-          PRAGMA main function.
-
-\param    argc                  number of command line arguments.
-
-\param    argv                  vector of command line arguments.
-
-\retval   0                     on success.
-
-\retval   -1                    on failure.
-
-\author   Andreas Nilkens
-
-\date     2017-04-26
-
-*//**************************************************************************/
-int pragma::main( int argc, char *argv[] )
-//----------------------------------------------------------------------------
+// Faltung
+pragma::Image::RealImagePointer falte(const pragma::Image::RealImagePointer image, const pragma::Image::RealImagePointer filter)
 {
-  std::cout << "Vorlesung Sehen in Mensch und Maschine Aufgabe 6\n\n";
+	// Das gefaltete Bild
+	pragma::Image::RealImagePointer resultL(image->xResolution(), image->yResolution());
+	resultL->init(0);
 
-  //Parameter von Kommandozeile einlesen, benötigt werden Name vom Bild aus dem
-  //das Template erzeugt wird, Name des Testbildes,
-  //Position des Auschnitts im ersten Bild, Breite des Ausschnitts, Skalierung
-  //und Rauschstärke für Testbild
+	for (unsigned int iX = 0; iX < image->xResolution(); iX++)
+	{
+		for (unsigned int iY = 0; iY < image->yResolution(); iY++)
+		{
+			pragma::REAL currValue = 0.0;
+			pragma::REAL normValue = 0.0;
+			for (unsigned int fX = 0; fX < filter->xResolution(); fX++)
+			{
+				for (unsigned int fY = 0; fY < filter->yResolution(); fY++)
+				{
+					int tempX = iX - fX;
+					int tempY = iY - fY;
 
-  //Eingabebild einlesen
-  pragma::Image::ByteImagePointer imageL;
-  imageL->read(imageNameL);
+					// add image resolution to prevent negative values
+					tempX = (tempX + image->xResolution()) % image->xResolution();
+					tempY = (tempY + image->yResolution()) % image->yResolution();
 
-  //Bildausschnitt ausschneiden
-  ImageManipulator imageManipulatorL(..);
-  //Filter aus Bildausschnitt erzeugen
-  pragma::Image::RealImagePointer filterL(..);
+					pragma::REAL tempValue = image->pixel(tempX, tempY);
+					normValue += pragma::sqr(tempValue);
+					currValue += tempValue * filter->pixel(fX, fY);
+				}
+			}
+			resultL->pixel(iX, iY, currValue / std::sqrt(normValue));
+		}
+	}
 
+	return resultL;
+}
+// ========== Main function ==========
+int pragma::main(int argc, char *argv[])
+{
+	std::cout << "Vorlesung Sehen in Mensch und Maschine Aufgabe 6\n\n";
 
-  //Testbild einlesen und gegebenenfalls mit ImageManipulator abändern
-  imageL->read(testImageL);
-  ImageManipulator imageManipulator2L(..);
-  
+	// Variablen anlegen (und default-Werte festlegen) fuer:
+	// Name des Eingabebilds, Name des Testbilds, Position des Ausschnitts im Eingabebild, Breite und Hoehe des Ausschnitts, Skalierung und Rauschstaerke
+	string imageName = "../images/face0.tiff";
+	string testImageName = "../images/face1.tiff";
+	// TODO
 
-  //Filter mit Bild falten (inklusive Normierung)
-  pragma::Image::RealImagePointer convolvedImageL = convolve(..);
+	int posSubImageX = 0;
+	int posSubImageY = 0;
+	int widthSubImage = 10;
+	int heightSubImage = 10;
+	int scaleSubImageX = 10;
+	int scaleSubImageY = 10;
+	pragma::REAL noiseStrength = 0.0;
 
-  //Position maximaler Antwort bestimmen und Filter in Testbild reinkopieren
+	// Parameter ueber Benutzereingaben (pcin) oder Kommandozeile einlesen
+	// TODO
 
+	if (argc != 10)
+	{
+		std::cout
+			<< "Usage:"
+			<< std::endl
+			<< argv[0]
+			<< " <InputImage> <TestImage> <X-Pos SubImage> <Y-Pos SubImage> <Width SubImage> <Height SubImage> <Scale X> <Scale Y> <NoiseStrength>\n";
 
-  //Faltungsbild und Testbild auf Festplatte speichern
+		std::cout
+			<< "Demo:"
+			<< std::endl
+			<< argv[0] << " "
+			<< imageName << " "
+			<< testImageName << " "
+			<< posSubImageX << " "
+			<< posSubImageY << " "
+			<< widthSubImage << " "
+			<< heightSubImage << " "
+			<< scaleSubImageX << " "
+			<< scaleSubImageY << " "
+			<< noiseStrength << std::endl;
+		return -1;
+	}
 
+	imageName = pragma::string(argv[1]);
+	testImageName = pragma::string(argv[2]);
+	posSubImageX = atoi(argv[3]);
+	posSubImageY = atoi(argv[4]);
+	widthSubImage = atoi(argv[5]);
+	heightSubImage = atoi(argv[6]);
+	scaleSubImageX = atoi(argv[7]);
+	scaleSubImageY = atoi(argv[8]);
+	noiseStrength = atof(argv[9]);
 
-  return 0;
+	std::cout
+		<< "Inputs:"
+		<< std::endl
+		<< "<InputImage>       : " << imageName << std::endl
+		<< "<TestImage>        : " << testImageName << std::endl
+		<< "<X-Pos SubImage>   : " << posSubImageX << std::endl
+		<< "<Y-Pos SubImage>   : " << posSubImageY << std::endl
+		<< "<Width SubImage>   : " << widthSubImage << std::endl
+		<< "<Height SubImage>  : " << heightSubImage << std::endl
+		<< "<Scale X>          : " << scaleSubImageX << std::endl
+		<< "<Scale Y>          : " << scaleSubImageY << std::endl
+		<< "<NoiseStrength>    : " << noiseStrength << std::endl;
+	// Eingabebild einlesen
+	pragma::Image::ByteImagePointer image;
+	image->read(imageName);
+	image->write("image.png");
+
+	// Bildausschnitt ausschneiden
+	// TODO
+	ImageManipulator imageManipulator(posSubImageX, posSubImageX + widthSubImage, posSubImageY, posSubImageY + heightSubImage);
+	pragma::Image::ByteImagePointer subImage = imageManipulator.createSubImage(image);
+	subImage->writePNG("subImage.png");
+	// Filter aus Bildausschnitt erzeugen
+	// TODO
+	pragma::Image::RealImagePointer filter(subImage);
+	
+	//filter->rotate180();
+
+	// Testbild einlesen
+	pragma::Image::ByteImagePointer image2;
+	image2->read(testImageName);
+	image2->writePNG("image2.png");
+	// Mit ImageManipulator verarbeiten (Rauschen und Skalierung)
+	// TODO
+	ImageManipulator imageManipulator2(noiseStrength);
+	imageManipulator2.setScaleImage(true);
+	imageManipulator2.setResolution(scaleSubImageX, scaleSubImageY);
+
+	pragma::Image::ByteImagePointer testImage = imageManipulator2.processImage(image2);
+	testImage->writePNG("testImage.png");
+	// Filter mit Bild falten (inklusive Normalisierung)
+	// TODO
+	pragma::Image::RealImagePointer convolvedImage = falte(testImage, filter);
+
+	// Position im gefalteten Bild mit maximaler Antwort bestimmen
+	// TODO
+	int globalMax_X = 0;
+	int globalMax_Y = 0;
+	pragma::REAL maxValue = convolvedImage->findGlobalMax(globalMax_X, globalMax_Y);
+
+	// Filter in Testbild kopieren (sodass z.B. die ausgeschnittene Nase auf der gefundenen Nase angezeigt wird)
+	pragma::Image::RealImagePointer finalImage(testImage);
+
+	//filter->rotate180();
+	finalImage->put(filter, globalMax_X, globalMax_Y);
+
+	// convolvedImage und finalImage auf Festplatte speichern (Konvertierung in ByteImagePointer ist erlaubt)
+	// TODO
+
+	pragma::Image::ByteImagePointer store_convolvedImage(convolvedImage);
+	store_convolvedImage->writePNG("convolvedImage.png");
+
+	pragma::Image::ByteImagePointer store_finalImage(finalImage);
+	store_finalImage->writePNG("finalImage.png");
+	return 0;
 }

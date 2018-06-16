@@ -59,6 +59,7 @@ void createGaborWavelet(
 	int tempXRes = wavelet->xResolution();
 	int tempYRes = wavelet->yResolution();
 
+	pragma::TwoDimPoint currK(tempFactor * std::cos(tempParameter), tempFactor * std::sin(tempParameter));
 	for (int x = 0; x < tempXRes; x++)
 	{
 		for (int y = 0; y < tempYRes; y++)
@@ -70,13 +71,12 @@ void createGaborWavelet(
 			pragma::REAL tempY = 2 * pragma::PI / tempYRes;
 			tempY *= (y >= tempYRes / 2) ? -1 * (tempYRes - y) : y;
 
-			pragma::REAL tempOmega = std::sqrt(pragma::sqr(tempX) + pragma::sqr(tempY));
-			pragma::REAL currK = std::sqrt(pragma::sqr(k_ml.at(0)) + pragma::sqr(k_ml.at(1)));
+			pragma::TwoDimPoint currOmega(tempX, tempY);
 
-			pragma::REAL tempPotenz = pragma::sqr(sigma) / -2 * pragma::sqr(currK);
-			pragma::REAL tempPotenzFaktor1 = pragma::sqr(tempOmega - currK);
-			//pragma::REAL tempPotenzFaktor1 = pragma::sqr(tempX-k_ml.at(0)) + pragma::sqr(tempY-k_ml.at(1));
-			pragma::REAL tempPotenzFaktor2 = pragma::sqr(tempOmega) + pragma::sqr(currK);
+			pragma::REAL tempPotenz = pragma::sqr(sigma) / -2 * currK.norm2();
+
+			pragma::REAL tempPotenzFaktor1 = (currOmega-currK).norm2();
+			pragma::REAL tempPotenzFaktor2 = currOmega.norm2() + currK.norm2();
 
 			pragma::REAL currVal = std::exp(tempPotenz * tempPotenzFaktor1) - std::exp(tempPotenz * tempPotenzFaktor2);
 

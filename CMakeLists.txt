@@ -54,13 +54,13 @@ include(${PRAGMA_MAKE_HOME}/Cmakefile.libs)
 # pragma_executable(zettel3 Zettel3)
 
 # add Day4
- pragma_executable(zettel4 Zettel4)
+# pragma_executable(zettel4 Zettel4)
 
 # add Day5
-  pragma_executable(zettel5 Zettel5)
+#  pragma_executable(zettel5 Zettel5)
 
 # add Day6
-#  pragma_executable(zettel6 Zettel6)
+  pragma_executable(zettel6 Zettel6)
 
 # add Day7
 #  pragma_executable(zettel7 Zettel7)

@@ -193,25 +193,51 @@ int pragma::main(int argc, char *argv[])
 	getchar();
 
 	/*
+
+		Anmerkung zum Koardinatensystem:
+		Die Anordnung des Koardinatensystems in Pragma ist wie folgt:
 		+---------+---------+
 		|A(0,0)   |   B(x,0)|
 		|.a.      |      .b.|
-		+---------+---------+  
+		+---------#---------+  
 		|.c.      |      .d.|
 		|C(0,y)   |   D(x,y)|
 		+---------+---------+
+		wobei # den Mittelpunkt des Feldes darstellt.
 
-		wird zur:
+		diese wird bei Berechnungen, wie in der Mathematik bekannten Koardinatensystem, umgewandelt.
 
 		+---------+---------+
 		|      .d.|.c.      |
 		|   D(x,y)|C(0,y)   |
-		+---------+---------+  
+		+---------#---------+  
 		|   B(x,0)|A(0,0)   |
 		|      .b.|.a.      |
 		+---------+---------+
+		wobei # den Ursprung des Koardinatensystem darstellt.
 
-		wobei + den Mittelpunkt des Feldes darstellt.
+		//---------------------
+		
+		Anmerkung zum Frequenzraum:
+		Von Koardinaten (0,0) links oben bis zur Bildmitte steigen die Werte mit der Steigung 2*PI/Bild(breite\/höhe)
+		Ab der Bildmitte fallen die Werte mit mit der Steigung -2*PI/Bild(breite\/höhe)
+
+		Visuelle Darstellung:
+		+------------------+------------------+
+		| f'(x) =  2*PI/X  | f'(x) = -2*PI/X  |
+		| f'(y) =  2*PI/Y  | f'(y) =  2*PI/Y  |
+		+------------------#------------------+  
+		| f'(x) =  2*PI/X  | f'(x) = -2*PI/X  |
+		| f'(y) = -2*PI/Y  | f'(y) = -2*PI/Y  |
+		+------------------+------------------+
+		
+		wobei:
+		- X = [0, Bildbreite-1], 
+		- Y = [0, Bildhöhe-1],
+		- x € X, 
+		- y € Y, 
+		- f'(x) = Steigung von f(x)
+		- # in der Zeichnung soll Bildmitte sein
 	*/
 
 	// ====== Aufgabe 4.2.1 ======
@@ -245,10 +271,10 @@ int pragma::main(int argc, char *argv[])
 			pragma::REAL tempY = 2 * pragma::PI / tempYRes;
 			tempY *= (y >= tempYRes / 2) ? -1 * (tempYRes - y) : y;
 
-			pragma::REAL tempOmegaSqr = pragma::sqr(tempX) + pragma::sqr(tempY);
+			pragma::TwoDimPoint currOmega(tempX,tempY);
 
 			pragma::REAL currVal = 2 * pragma::PI * currSigmaSqr;
-			currVal *= std::exp(currSigmaSqr * tempOmegaSqr / -2);
+			currVal *= std::exp(currSigmaSqr * currOmega.norm2() / -2);
 
 			return currVal;
 		};
