@@ -42,24 +42,22 @@ void createGaborWavelet(
 	pragma::REAL sigma)
 {
 	// Frequenzvektor k fuer aktuelles m bzw. l besimmen (Gleichung 8)
-	// TODO
+	// TODO:
 
 	// std::pow(base, exp) , exp needs to be double, so use -1.0 as factor
 	pragma::REAL tempFactor = kMax * std::pow(k, -1.0 * m);
 	pragma::REAL tempParameter = pragma::PI * l / L;
 
-	std::vector<pragma::REAL> k_ml = {tempFactor * std::cos(tempParameter), tempFactor * std::sin(tempParameter)};
+	pragma::TwoDimPoint currK(std::cos(tempParameter), std::sin(tempParameter));
+	currK *= tempFactor;
 
 	// Waveletfamilie im Frequenzraum berechnen (Gleichung 7)
 	// omega wird hier genau wie in Aufgabe 4.2.1 berechnet. Der Code kann wiederverwendet werden.
-	// TODO
-	pragma::Trafo::FastFourierTransform tempFFT;
-	tempFFT.transformForward(wavelet);
+	// TODO:
 
 	int tempXRes = wavelet->xResolution();
 	int tempYRes = wavelet->yResolution();
 
-	pragma::TwoDimPoint currK(tempFactor * std::cos(tempParameter), tempFactor * std::sin(tempParameter));
 	for (int x = 0; x < tempXRes; x++)
 	{
 		for (int y = 0; y < tempYRes; y++)
@@ -124,7 +122,7 @@ int pragma::main(int argc, char *argv[])
 
 			// ====== Aufgabe 5.1.2 ======
 			// Frequenzraumfaltung von komplexem Bild mit Wavelet durchfuehren
-			// TODO
+			// TODO:
 			pragma::Image::ComplexImagePointer currComplexImg(bild);
 
 			pragma::Trafo::FastFourierTransform tempFFT;
@@ -136,7 +134,7 @@ int pragma::main(int argc, char *argv[])
 
 			// ====== Aufgabe 5.1.3 ======
 			// Betraege der Teilbandbilder ausgeben
-			// TODO
+			// TODO:
 			pragma::string currIterationName("l%d_m%d", l, m);
 
 			pragma::Graphics::WindowPointer window_1("convolve_" + currIterationName);

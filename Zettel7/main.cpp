@@ -1,199 +1,247 @@
-// =============================================================================
-//  PRaGMA is a library of Pattern Recognition and Graph Matching Algorithms.
-// =============================================================================
-//  Copyright 2007-2014 Institut fuer Neuroinformatik, Ruhr-Universitaet Bochum
-//
-//  This file is part of PRaGMA.
-//  PRaGMA is free software: you can redistribute it and/or modify it under
-//  the terms of the GNU Lesser General Public License as published by the
-//  Free Software Foundation, either version 3 of the License, or (at your
-//  option) any later version.
-//  PRaGMA is distributed in the hope that it will be useful, but WITHOUT
-//  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-//  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
-//  License for more details.
-//  You should have received a copy of the GNU Lesser General Public License
-//  along with this program. If not, see <http://www.gnu.org/licenses/>.
-//
-// =============================================================================
-//
-//  Author:   Andreas Nilkens
-//
-//  Email:    andreas.nilkens@ini.rub.de
-//
-//  Address:  Ruhr-Universitaet Bochum
-//            Institut fuer Neuroinformatik
-//            Universitaetsstr. 150
-//            D-44801 Bochum, Germany
-//
-// ===========================================================================
-//
-//! \file     ./programs/task/Zettel7/main.cpp
-//! \ingroup  ./programs/task
-//
-// ===========================================================================
-//
-//  $HeadURL$
-//  $Revision$
-//  $Date$
-//  $Author$
-//
-// ===========================================================================
-// ===========================================================================
-
-
-// ---- local includes -------------------------------------------------------
-
 #include "pragma.h"
 
-// ---- global includes ------------------------------------------------------
+// TODO: 
+/* Hinweise:
+Achten Sie darauf, bei 7.1.1 das Verhalten zu kommentieren und bei 7.1.2 die Ergebnisse zu vergleichen sowie die Aehnlichkeitswerte anzugeben.
 
-// ---- constants ------------------------------------------------------------
+- FeaSts werden in Pragma durch FeaStImagePointer dargestellt (namespace: pragma::FeaSt).
+- Die einzelnen FeaSts innerhalb eines solchen Bildes sind FeaStPointer. Der Zugriff erfolgt ueber die Pixelfunktion (z.B., um es im Gittergraph zu speichern):
+pragma::FeaSt::FeaStPointer feast = feastImagePointer->pixel(x, y);
+*/
 
-// ---- typedefs -------------------------------------------------------------
 
-// ---- external functions ---------------------------------------------------
-
-
-// Diese Funktion kopiert das übergebene Bild und markiert darin jede Stelle
-// des Gitters, dessen LINKE OBERE ECKE (nicht der Mittelpunkt) bei xA,yA
-// liegt, mit einem 5*5-Pixel großen Quadrat.
-pragma::Image::ByteImagePointer
-setGraph
-(
-  const pragma::Image::ByteImagePointer& byteImagePointerA,
-  const pragma::UINT32& xA,
-  const pragma::UINT32& yA,
-  const pragma::UINT32& stepsizeA,
-  const pragma::UINT32& nodesInRowA,
-  const pragma::UINT32& nodesInColumnA
-)
+// Diese Funktion kopiert das uebergebene Bild und markiert darin jede Stelle des Gitters, dessen LINKE OBERE ECKE (nicht der Mittelpunkt) 
+// bei (x,y) liegt, mit einem 5*5-Pixel großen Quadrat.
+pragma::Image::ByteImagePointer SetGraph(
+	const pragma::Image::ByteImagePointer& byteImagePointerA,
+	const pragma::UINT32& x,
+	const pragma::UINT32& y,
+	const pragma::UINT32& stepSize,
+	const pragma::UINT32& nodesInRow,
+	const pragma::UINT32& nodesInColumn)
 {
-  pragma::Image::ByteImagePointer byteImagePointerL(byteImagePointerA,pragma::TRUE);
-  for (pragma::UINT32 nXL = 0; nXL < nodesInRowA; nXL++)
-  {
-    for (pragma::UINT32 nYL = 0; nYL < nodesInColumnA; nYL++)
-    {
-      pragma::UINT32 xNodeL = xA + nXL * stepsizeA;
-      pragma::UINT32 yNodeL = yA + nYL * stepsizeA;
-      for (pragma::INT32 xL = -5; xL < 5; xL++)
-      {
-        for (pragma::INT32 yL = -5; yL < 5; yL++)
-        {
-          if ((xNodeL+xL >= 0) && (xNodeL+xL < byteImagePointerL->xResolution())
-              && (yNodeL+yL >= 0) && (yNodeL+yL < byteImagePointerL->yResolution()))
-          {
-            if (std::sqrt(static_cast<pragma::REAL>(xL*xL + yL*yL)) < 2)
-              byteImagePointerL->pixel(xNodeL+xL, yNodeL+yL) = 255;
-            if (std::sqrt(static_cast<pragma::REAL>(xL*xL + yL*yL)) < 1)
-              byteImagePointerL->pixel(xNodeL+xL, yNodeL+yL) = 0;
-          }
-        }
-      }
-    }
-  }
+	pragma::Image::ByteImagePointer byteImagePointer(byteImagePointerA, pragma::TRUE);
 
-  return byteImagePointerL;
+	for (pragma::UINT32 nX = 0; nX < nodesInRow; nX++)
+	{
+		for (pragma::UINT32 nY = 0; nY < nodesInColumn; nY++)
+		{
+			pragma::UINT32 xNode = x + nX * stepSize;
+			pragma::UINT32 yNode = y + nY * stepSize;
+
+			for (pragma::INT32 x = -5; x < 5; x++)
+			{
+				for (pragma::INT32 y = -5; y < 5; y++)
+				{
+					if ((xNode + x >= 0) && (xNode + x < byteImagePointer->xResolution())
+						&& (yNode + y >= 0) && (yNode + y < byteImagePointer->yResolution()))
+					{
+						if (std::sqrt(static_cast<pragma::REAL>(x*x + y*y)) < 2)
+							byteImagePointer->pixel(xNode + x, yNode + y) = 255;
+						if (std::sqrt(static_cast<pragma::REAL>(x*x + y*y)) < 1)
+							byteImagePointer->pixel(xNode + x, yNode + y) = 0;
+					}
+				}
+			}
+		}
+	}
+
+	return byteImagePointer;
 }
 
-/*************************************************************************//*!
 
-          PRAGMA main function.
-
-\param    argc                  number of command line arguments.
-
-\param    argv                  vector of command line arguments.
-
-\retval   0                     on success.
-
-\retval   -1                    on failure.
-
-\author   Andreas Nilkens
-
-\date     2017-04-26
-
-*//**************************************************************************/
-int pragma::main( int argc, char *argv[] )
-//----------------------------------------------------------------------------
+// Plottet die Aehnlichkeit eines einzelnen FeaSts zu einem FeaStImage
+pragma::Image::RealImagePointer PlotSimilarity(pragma::FeaSt::FeaStImagePointer image, pragma::FeaSt::FeaStPointer feaSt, pragma::FeaSt::SimFctPointer simFct)
 {
-  std::cout
-    << "Vorlesung Sehen in Mensch und Maschine Aufgabe 7\n\n";
+	int imgX = image->xResolution();
+	int imgY = image->yResolution();
+	pragma::Image::RealImagePointer result(imgX, imgY);
 
-  if (argc != 9)
-  {
-    std::cout
-      << "Usage:\n"
-      << argv[0]
-      << " <InputImage1> <InputImage2> <OutputImage> <X> <Y> <Stepsize> <nodes per row> <nodes per column>\n";
+	// TODO:
+	for(int x = 0; x < imgX; x++)
+	{
+		for(int y = 0; y < imgY; y++)
+		{
+			pragma::REAL currValue = simFct->similarity(image->pixel(x,y),feaSt);
+			result->pixel(x,y,currValue);
+		}
+	}
 
-    return -1;
-  } // if
+	return result;
+}
 
-  pragma::string inputImage1NameL(argv[1]);
-  pragma::string inputImage2NameL(argv[2]);
-  pramga::string outputImageNameL(argv[3]);
-  pragma::INT32 xGraphL = atoi(argv[4]);
-  pragma::INT32 yGraphL = atoi(argv[5]);
-  pragma::UINT32 stepsizeL = atoi(argv[6]);
-  pragma::UINT32 nodesInRowL = atoi(argv[7]);
-  pragma::UINT32 nodesInColumnL = atoi(argv[8]);
+// Berechnet die Aehnlichkeit zwischen zwei Feast-Graphen ueber den Durchschnitt der Aehnlichkeiten ihrer FeaSts
+pragma::Image::RealImagePointer PlotSimilarity(pragma::FeaSt::FeaStImagePointer image, const pragma::vector<pragma::vector<pragma::FeaSt::FeaStPointer>> graph,
+	pragma::UINT32 stepSize, pragma::FeaSt::SimFctPointer simFct)
+{
+	int imgX = image->xResolution();
+	int imgY = image->yResolution();
+	pragma::Image::RealImagePointer result(imgX, imgY);
 
-  // Bilder einlesen
+	unsigned int countX = graph.size();
+	unsigned int countY = graph[0].size();
+	// TODO:
+	for(int x = 0; x < imgX; x++)
+	{
+		for(int y = 0; y < imgY; y++)
+		{
+			pragma::REAL tempValue = 0.0;
+			for (unsigned int nX = 0; nX < countX; nX++)
+			{
+				for (unsigned int nY = 0; nY < countY; nY++)
+				{
+					unsigned int xNode = (x + nX * stepSize) % imgX;
+					unsigned int yNode = (y + nY * stepSize) % imgY;
 
-  pragma::Image::ByteImagePointer byteImagePointer1L;
-  byteImagePointer1L->read(inputImage1NameL);
-
-  pragma::Image::ByteImagePointer byteImagePointer2L;
-  byteImagePointer2L->read(inputImage2NameL);
-
-  // Bilder anzeigen
-
-  pragma::Graphics::WindowPointer imageWindowPointer1L("Image Window",20,10);
-  imageWindowPointer1L->image(byteImagePointer1L);
-
-  pragma::Graphics::WindowPointer imageWindowPointer2L("Image Window2",220,10);
-  imageWindowPointer2L->image(byteImagePointer2L);
-
-  // FeaStImages erzeugen, jeder Pixel eines Feasts ist ein pragma::FeaSt::FeaStPointer
-  pragma::Trafo::ComplexTrafoImagePointer complexTrafoImagePointer1L;
-  pragma::Trafo::ComplexTrafoImagePointer complexTrafoImagePointer2L;
-  pragma::Trafo::GaborTrafoPointer trafoPointer1L;
-  pragma::Trafo::GaborTrafoPointer trafoPointer2L;
-  trafoPointer1L->transform(byteImagePointer1L, complexTrafoImagePointer1L);
-  trafoPointer2L->transform(byteImagePointer2L, complexTrafoImagePointer2L);
-  pragma::FeaSt::FeaStImagePointer feaStImagePointer1L(pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, complexTrafoImagePointer1L);
-  pragma::FeaSt::FeaStImagePointer feaStImagePointer2L(pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, complexTrafoImagePointer2L);
-
-  // Ein einzelnes FeaSt kann dann über die Pixelfunktion ausgelesen werden (um
-  // es zum Beispiel im Gittergraphen zu speichern).
-  pragma::FeaSt::FeaStPointer feaStL=feaStImagePointer1L->pixel(xL,yL);
-
-
-  // Gittergraph an Position xGraph yGraph aus Galeriebild erstellen; dieser
-  // speichert alle FeaStPointer, auf denen die Graphknoten liegen.
-
-
-  // Testbild mit dem Gittergraph mit Schrittweite 5 Pixel an allen Stellen
-  // durchlaufen, an denen der Graph ins Bild passt (links oben anfangen), und
-  // durchschnittliche Ähnlichkeit berechnen
-  // Dabei jeweils Ähnlichkeitswert ins Ausgabebild schreiben
-
-  // Zum Vergleichen der FeaSts eine dieser beiden Ähnlichkeitsfunktionen benutzen
-  pragma::FeaSt::Cubic::SimFct::AbsPhaseSimFctPointer simFctPointerL;
-  //pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer simFctPointerL;
-
-  // Zwei FeaSts werden dann wie folgt verglichen      
-  pragma::REAL simL = simFctPointerL->similarity(feaStImagePointer1A->pixel(xL,yL),feaStImagePointer2A->pixel(xL,yL));
-
-  // Stelle mit maximaler Ähnlichkeit bestimmen, Ähnlichkeit ausgeben und Graph
-  // an entsprechender Stelle mit setGraph im Testbild markieren
+					tempValue += simFct->similarity(image->pixel(xNode, yNode), graph[nX][nY]);
+				}
+			}
+			// avg
+			tempValue /= (countX*countY);
+			result->pixel(x,y, tempValue);
+		}
+	}
+	return result;
+}
 
 
 
-  std::getchar();
+// ========== Main function ==========
+int pragma::main(int argc, char *argv[])
+{
+	std::cout << "Vorlesung Sehen in Mensch und Maschine Aufgabe 7\n\n";
 
-  return 0;
-} // method
+	// Argumente fehlen
+	if (argc != 10)
+	{
+		cout << "Argc muss 10 sein, ist aber: " << argc << endl;
+		std::cout << "Nutzung:\n" << " <Galeriebild> <Testbild> <Ausgabebild> <X> <Y> <Schrittweite> <Knoten pro Reihe> <Knoten pro Spalte> <Aehnlichkeitsfunktion (0 oder 1)>\n";
+		
+		std::cout << "*** Demo:\n" << std::endl;
+		std::cout << argv[0] << " ";
+		std::cout << "../images/face1.tiff ";
+		std::cout << "../images/face0.tiff ";
+		std::cout << "output.png ";
+		std::cout << "0 ";
+		std::cout << "0 ";
+		std::cout << "5 ";
+		std::cout << "5 ";
+		std::cout << "5 ";
+		std::cout << "0 "<<std::endl;
+		getchar();
+
+		return -1;
+	}
+
+	// Argumente ueber Kommandozeile einlesen
+	pragma::string galleryImageName(argv[1]);		// Pfad des Galeriebildes
+	pragma::string testimageName(argv[2]);			// Pfad des Testbildes
+	pragma::string outputImageName(argv[3]);		// Pfad des Ausgabebildes
+	pragma::INT32 posX = atoi(argv[4]);				// x-Koordinate des Startpunktes
+	pragma::INT32 posY = atoi(argv[5]);				// y-Koordinate des Startpunktes
+	pragma::UINT32 stepSize = atoi(argv[6]);		// Abstand zwischen den einzelnen Knoten
+	pragma::UINT32 nodesInRow = atoi(argv[7]);		// Anzahl der horizontalen Knoten
+	pragma::UINT32 nodesInColumn = atoi(argv[8]);	// Anzahl der vertikalen Knoten
+	pragma::UINT8 simFunction = atoi(argv[9]);		// Aehnlichkeitsfunktion waehlen 
+
+	// Bilder einlesen und anzeigen
+	// Galeriebild
+	pragma::Image::ByteImagePointer galleryImage;
+	galleryImage->read(galleryImageName);
+	pragma::Graphics::WindowPointer galleryImageWindow("Galeriebild", 20, 10);
+	galleryImageWindow->image(galleryImage);
+
+	// Testbild
+	pragma::Image::ByteImagePointer testImage;
+	testImage->read(testimageName);
+	pragma::Graphics::WindowPointer testImageWindow("Testbild", 220, 10);
+	testImageWindow->image(testImage);
+
+	// FeaStImages erzeugen, jeder Pixel eines FeaSts ist ein pragma::FeaSt::FeaStPointer
+	// Galeriebild
+	pragma::Trafo::ComplexTrafoImagePointer galleryImageComplex;
+	pragma::Trafo::GaborTrafoPointer galleryTrafoPointer;
+	galleryTrafoPointer->transform(galleryImage, galleryImageComplex);
+	pragma::FeaSt::FeaStImagePointer galleryFeastImagePointer(pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, galleryImageComplex);
+
+	// Testbild
+	pragma::Trafo::ComplexTrafoImagePointer testImageComplex;
+	pragma::Trafo::GaborTrafoPointer testTrafoPointer;
+	testTrafoPointer->transform(testImage, testImageComplex);
+	pragma::FeaSt::FeaStImagePointer testFeastImagePointer(pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, testImageComplex);
+
+	// Aehnlichkeitsfunktion auswaehlen (0 = Phase, 1 = Absolutwert)
+	pragma::FeaSt::SimFctPointer simFctPointer;
+	if (simFunction == 0)
+		simFctPointer = pragma::FeaSt::Cubic::SimFct::AbsPhaseSimFctPointer();
+	else
+		simFctPointer = pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer();
 
 
-// ====== END OF FILE ========================================================
+	// ========== Aufgabe 7.1.1 ==========
+
+	// a) Aehnlichkeit eines FeaSts vom Galeriebild zu den anderen FeaSts des Bildes
+	// FeaStPointer anlegen (z.B. von einem Auge)
+	// TODO: done!
+	pragma::FeaSt::FeaStPointer feastPointer = galleryFeastImagePointer->pixel(40, 64);
+
+	// Aehnlichkeit berechnen
+	pragma::Image::RealImagePointer responseImage1 = PlotSimilarity(galleryFeastImagePointer, feastPointer, simFctPointer);
+	int globalX = 0;
+	int globalY = 0; 
+	pragma::REAL globalVal = responseImage1->findGlobalMax(globalX,globalY);
+
+	// Maximale Aehnlichkeit in Konsole ausgeben
+    // TODO: done!
+	std::cout << "Maximale Aehnlichkeit " << globalVal << " bei x: "<< globalX << " y: " << globalY << std::endl;
+
+	// b) Aehnlichstes FeaSt in Testbild bestimmen
+	// Aehnlichkeit berechnen
+	pragma::Image::RealImagePointer responseImage2 = PlotSimilarity(testFeastImagePointer, feastPointer, simFctPointer);
+	int globalX2 = 0;
+	int globalY2 = 0; 
+	pragma::REAL globalVal2 = responseImage2->findGlobalMax(globalX2,globalY2);
+	// Maximale Aehnlichkeit in Konsole ausgeben
+    // TODO: done!
+	std::cout << "Maximale Aehnlichkeit " << globalVal2 << " bei x: "<< globalX2 << " y: " << globalY2 << std::endl;
+
+
+
+	// ========== Aufgabe 7.1.2 ==========
+	// Gittergraph aus Galeriebild erstellen (an Position (posX, posY)), der alle FeaStPointer speichert, auf denen die Graphknoten liegen.
+	// Zweidimensionalen Graphen erstellen
+	pragma::vector<pragma::vector<pragma::FeaSt::FeaStPointer>> graph(nodesInRow, pragma::vector<pragma::FeaSt::FeaStPointer>(nodesInColumn));
+
+	// Ueber alle Knoten (Nodes) iterieren und entsprechende FeaStPointer eintragen
+	// TODO:
+	for (unsigned int nX = 0; nX < nodesInRow; nX++)
+	{
+		for (unsigned int nY = 0; nY < nodesInColumn; nY++)
+		{
+			unsigned int xNode = (posX + nX * stepSize) % galleryFeastImagePointer->xResolution();
+			unsigned int yNode = (posY + nY * stepSize) % galleryFeastImagePointer->yResolution();
+			graph[nX][nY] = galleryFeastImagePointer->pixel(xNode, yNode);
+		}
+	}
+	// Testbild mit dem Gittergraphen mit Schrittweite 5 Pixel an allen Stellen durchlaufen, an denen der Graph ins Bild passt (links oben anfangen), 
+	// und durchschnittliche Aehnlichkeit berechnen (dabei jeweils Aehnlichkeitswert ins Ausgabebild schreiben)
+	pragma::Image::RealImagePointer responseImageGraph = PlotSimilarity(testFeastImagePointer, graph, stepSize, simFctPointer);
+
+	// Stelle mit maximaler Aehnlichkeit bestimmen
+	// TODO:
+	int globalX3 = 0;
+	int globalY3 = 0; 
+	pragma::REAL globalVal3 = responseImageGraph->findGlobalMax(globalX3,globalY3);
+	// Aehnlichkeit in Konsole ausgeben
+    // TODO:
+	std::cout << "Maximale Aehnlichkeit " << globalVal3 << " bei x: "<< globalX3 << " y: " << globalY3 << std::endl;
+
+
+	// SetGraph() benutzen, um den Graphen an der entsprechenden Stelle im Testbild zu markieren und Ergebnis in Datei schreiben
+	pragma::Image::ByteImagePointer outputImage = SetGraph(responseImageGraph, globalX3, globalY3, stepSize, nodesInRow, nodesInColumn);
+	outputImage->write(outputImageName);
+
+	std::getchar();
+
+	return 0;
+}

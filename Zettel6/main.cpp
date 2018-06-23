@@ -38,7 +38,8 @@ pragma::Image::RealImagePointer falte(const pragma::Image::RealImagePointer imag
 					currValue += tempValue * filter->pixel(fX, fY);
 				}
 			}
-			resultL->pixel(iX, iY, currValue / std::sqrt(normValue));
+			pragma::REAL normedValue = currValue / std::sqrt(normValue);
+			resultL->pixel(iX, iY, normedValue);
 		}
 	}
 
@@ -53,18 +54,18 @@ int pragma::main(int argc, char *argv[])
 	// Name des Eingabebilds, Name des Testbilds, Position des Ausschnitts im Eingabebild, Breite und Hoehe des Ausschnitts, Skalierung und Rauschstaerke
 	string imageName = "../images/face0.tiff";
 	string testImageName = "../images/face1.tiff";
-	// TODO
+	// TODO:
 
-	int posSubImageX = 0;
-	int posSubImageY = 0;
-	int widthSubImage = 10;
-	int heightSubImage = 10;
-	int scaleSubImageX = 10;
-	int scaleSubImageY = 10;
+	int posSubImageX = 50;
+	int posSubImageY = 50;
+	int widthSubImage = 20;
+	int heightSubImage = 20;
+	int scaleSubImageX = 128;
+	int scaleSubImageY = 128;
 	pragma::REAL noiseStrength = 0.0;
 
-	// Parameter ueber Benutzereingaben (pcin) oder Kommandozeile einlesen
-	// TODO
+	// Parameter ueber Benutzereingaben (cin) oder Kommandozeile einlesen
+	// TODO:
 
 	if (argc != 10)
 	{
@@ -75,7 +76,7 @@ int pragma::main(int argc, char *argv[])
 			<< " <InputImage> <TestImage> <X-Pos SubImage> <Y-Pos SubImage> <Width SubImage> <Height SubImage> <Scale X> <Scale Y> <NoiseStrength>\n";
 
 		std::cout
-			<< "Demo:"
+			<< "** Demo:"
 			<< std::endl
 			<< argv[0] << " "
 			<< imageName << " "
@@ -112,52 +113,61 @@ int pragma::main(int argc, char *argv[])
 		<< "<Scale X>          : " << scaleSubImageX << std::endl
 		<< "<Scale Y>          : " << scaleSubImageY << std::endl
 		<< "<NoiseStrength>    : " << noiseStrength << std::endl;
+
+		
 	// Eingabebild einlesen
 	pragma::Image::ByteImagePointer image;
 	image->read(imageName);
 	image->write("image.png");
 
 	// Bildausschnitt ausschneiden
-	// TODO
+	// TODO:
 	ImageManipulator imageManipulator(posSubImageX, posSubImageX + widthSubImage, posSubImageY, posSubImageY + heightSubImage);
 	pragma::Image::ByteImagePointer subImage = imageManipulator.createSubImage(image);
 	subImage->writePNG("subImage.png");
 	// Filter aus Bildausschnitt erzeugen
-	// TODO
+	// TODO:
 	pragma::Image::RealImagePointer filter(subImage);
-	
-	//filter->rotate180();
-
 	// Testbild einlesen
 	pragma::Image::ByteImagePointer image2;
 	image2->read(testImageName);
 	image2->writePNG("image2.png");
 	// Mit ImageManipulator verarbeiten (Rauschen und Skalierung)
-	// TODO
+	// TODO:
 	ImageManipulator imageManipulator2(noiseStrength);
 	imageManipulator2.setScaleImage(true);
 	imageManipulator2.setResolution(scaleSubImageX, scaleSubImageY);
 
 	pragma::Image::ByteImagePointer testImage = imageManipulator2.processImage(image2);
 	testImage->writePNG("testImage.png");
+
 	// Filter mit Bild falten (inklusive Normalisierung)
-	// TODO
+	// TODO:
+
+	filter->rotate180();
 	pragma::Image::RealImagePointer convolvedImage = falte(testImage, filter);
+	filter->rotate180();
 
 	// Position im gefalteten Bild mit maximaler Antwort bestimmen
-	// TODO
+	// TODO:
 	int globalMax_X = 0;
 	int globalMax_Y = 0;
-	pragma::REAL maxValue = convolvedImage->findGlobalMax(globalMax_X, globalMax_Y);
+	convolvedImage->findGlobalMax(globalMax_X, globalMax_Y);
+
+	globalMax_X -= filter->xResolution() - 1;
+	globalMax_Y -= filter->yResolution() - 1;
+	std::cout << "gX: " << globalMax_X << " // gY: " << globalMax_Y << std::endl;
 
 	// Filter in Testbild kopieren (sodass z.B. die ausgeschnittene Nase auf der gefundenen Nase angezeigt wird)
 	pragma::Image::RealImagePointer finalImage(testImage);
 
-	//filter->rotate180();
-	finalImage->put(filter, globalMax_X, globalMax_Y);
-
+	if (globalMax_X > -1 && globalMax_Y > -1)
+		finalImage->put(filter, globalMax_X, globalMax_Y);
+	else
+		std::cout << "globalMax_X | globalMax_Y out of range"<< std::endl;
+	
 	// convolvedImage und finalImage auf Festplatte speichern (Konvertierung in ByteImagePointer ist erlaubt)
-	// TODO
+	// TODO:
 
 	pragma::Image::ByteImagePointer store_convolvedImage(convolvedImage);
 	store_convolvedImage->writePNG("convolvedImage.png");
