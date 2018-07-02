@@ -1,14 +1,81 @@
+/*
+Abdullah Sahin
+Tolga Akkiraz
+*/
 #include <pragma.h>
 #include <iostream>
 #include "ImageManipulator.h"
 
-/* Hinweis:
-Da die Aufgaben ineinander uebergehen, gibt es bei dieser Vorlage keine klare Unterteilung in 6.1.1 und 6.1.2. 
-Es sollen keine weiteren Dateien included werden (auch nicht Faltung.h). Der entsprechende Code wird in die falte()-Funktion eingefuegt und die
-ImageManipulator.h bzw. .cpp muessen mit hochgeladen werden, da die Abgabe sonst nicht korrigiert werden kann.
-Denken Sie daran, verschiedene Rauschstaerken und Skalierungen auszuprobieren und die entsprechenden Fragen fuer 6.1.2 und 6.1.3 zu beantworten.
-*/
+/*
+6.1.2)
+******
+Wir sind strategisch wie folgt vorgegangen:
+-Für jede nicht triviale Permutation von Größenskalierung und Rauschstärke ein Bild erzeugt.
+	-Skalierungsfaktor 	von 0.1 bis -2.0 mit 0.1  Schritten (18 Iterattionen)
+	-Rauschstärke 		von 0.0 bis  1.0 mit 0.05 Schritten (20 Iterationen)
 
+-Somit hatten wir 360 Bilder zum auswerten. (Bei Nachfrage per Mail nachreichbar.)
+
+Auswertung:
+Faktor für Gößenskalierung     	Rauschstärke
+x>1.8							-- keine --
+1.8								0.15, 0.20
+1.7								-- keine --
+1.6								0.05, 0.10, 0.15, 0.20
+1.5								0.05, 0.10
+1.4								0.05
+1.3								0.00, 0.05, 0.10
+1.2								0.00
+1.1								0.00, 0.15, 0.20
+1.0								0.00, 0.05, 0.20
+0.9								0.00, 0.05, 0.10
+0.8								0.00
+0.7								0.00, 0.05
+0.6								0.00, 0.05
+0.5								0.00, 0.05
+x<0.5							-- keine --
+
+Erkenntnis:
+Die minimale Skalierungsfaktor ist 0.5, die maximal ist 1.8, 
+wobei dies einem Zufall geschuldet sein kann.
+Die maximale Rauschstärke, bei dem die Nase auffindbar war, ist 0.20.
+Bei der Rauschstärke ist keine Linearität zu erkennen, 
+da diese einem pseudo-zufälligem Prozess unterworfen ist.
+Zwischen 0.5 - 1.3 Skalierungsfaktor ist die Nase 
+mit keinem Rauschen noch wiederfindbar.
+Daraus erschließt sich, dass der Intervall [0.5, 1.3] eine untere bzw.
+obere Schranke für den Skalierungsfaktor sein kann.
+Bei der Rauschstärke ist eine Beschränkung nicht so leicht ersichtlich, 
+jedoch ist die Nase mit einer Rauschstärke im Intervall [0.00, 0.05]
+in den meisten Skalierungsfaktoren wiederfindbar.
+Wobei man im Hinterkopf behalten muss, 
+dass die durch zufügen eines Rausches enstehende Artefakte 
+unglücklich positioniert werden könnten 
+und somit die obige Auswertung manipulieren.
+
+Fazit:
+Beim Rauschen höher als 0.05 können die Ergebnisse stark gefälscht werden,
+da diese an zufällige Positionen Werte von 0 oder 255 einträgt. Dies hat
+zufolge, dass der globale Extrema verschoben werden kann und somit
+das Template falsch gematcht wird. Ebenso kann es einen positiven Effekt haben, 
+in dem der globale Wert zufällig an der gewünschten Position ensteht.
+
+Beim Skalieren des Bildes steht der Faktor mit dem Template im Zusammenspiel.
+Ebenso darf das Bild nicht zu groß werden, da die Berechnung des erwünschten globalen Extremas
+über die Größe des Templates hinausgeht.
+Bei zu kleinen Bildern ensteht ein globales Extrema in der Umgebung des gewünschtens Positiones,
+da diese schon in die Berechnung einfliesen.
+
+6.1.3)
+Ohne Beachtung der Bildstörung verspricht ein größeres Template eine bessere Wiederfindungs-Quote.
+Ein kleines Template, wie 3x3 enthält nur 9 Pixel, also fließen nur 9 Werte in eine Berechnung.
+Bei so einer niedrigen Anzahl ist die Wahrscheinlichkeit hoch, dass andere Bereiche des Bildes
+die selben Ergebnisse liefern.
+Je größer das Template, desto unterschiedlicher - ausgehend von einem unebenen Template -
+sind die Werte und desto unwahrscheinlicher ist, das diese Werte in einem andere Bereich des Bildes
+die selben Ergebnisse liefern.
+
+*/
 // Faltung
 pragma::Image::RealImagePointer falte(const pragma::Image::RealImagePointer image, const pragma::Image::RealImagePointer filter)
 {
@@ -22,12 +89,13 @@ pragma::Image::RealImagePointer falte(const pragma::Image::RealImagePointer imag
 		{
 			pragma::REAL currValue = 0.0;
 			pragma::REAL normValue = 0.0;
-			for (unsigned int fX = 0; fX < filter->xResolution(); fX++)
+			for (unsigned int fX = filter->xResolution()-1; fX > 0 ; fX--)
 			{
-				for (unsigned int fY = 0; fY < filter->yResolution(); fY++)
+				for (unsigned int fY = filter->yResolution()-1; fY > 0; fY--)
 				{
-					int tempX = iX - fX;
-					int tempY = iY - fY;
+					
+					int tempX = iX + fX - 1;
+					int tempY = iY + fY - 1;
 
 					// add image resolution to prevent negative values
 					tempX = (tempX + image->xResolution()) % image->xResolution();
@@ -54,26 +122,25 @@ int pragma::main(int argc, char *argv[])
 	// Name des Eingabebilds, Name des Testbilds, Position des Ausschnitts im Eingabebild, Breite und Hoehe des Ausschnitts, Skalierung und Rauschstaerke
 	string imageName = "../images/face0.tiff";
 	string testImageName = "../images/face1.tiff";
-	// TODO:
+	// TODO: done!
 
-	int posSubImageX = 50;
-	int posSubImageY = 50;
-	int widthSubImage = 20;
+	int posSubImageX = 60;
+	int posSubImageY = 58;
+	int widthSubImage = 16;
 	int heightSubImage = 20;
-	int scaleSubImageX = 128;
-	int scaleSubImageY = 128;
+	pragma::REAL scaleSubImage = 1.0;
 	pragma::REAL noiseStrength = 0.0;
 
 	// Parameter ueber Benutzereingaben (cin) oder Kommandozeile einlesen
-	// TODO:
+	// TODO: done!
 
-	if (argc != 10)
+	if (argc != 9)
 	{
 		std::cout
 			<< "Usage:"
 			<< std::endl
 			<< argv[0]
-			<< " <InputImage> <TestImage> <X-Pos SubImage> <Y-Pos SubImage> <Width SubImage> <Height SubImage> <Scale X> <Scale Y> <NoiseStrength>\n";
+			<< " <InputImage> <TestImage> <X-Pos SubImage> <Y-Pos SubImage> <Width SubImage> <Height SubImage> <Scalefactor> <NoiseStrength>\n";
 
 		std::cout
 			<< "** Demo:"
@@ -85,8 +152,7 @@ int pragma::main(int argc, char *argv[])
 			<< posSubImageY << " "
 			<< widthSubImage << " "
 			<< heightSubImage << " "
-			<< scaleSubImageX << " "
-			<< scaleSubImageY << " "
+			<< scaleSubImage << " "
 			<< noiseStrength << std::endl;
 		return -1;
 	}
@@ -97,9 +163,11 @@ int pragma::main(int argc, char *argv[])
 	posSubImageY = atoi(argv[4]);
 	widthSubImage = atoi(argv[5]);
 	heightSubImage = atoi(argv[6]);
-	scaleSubImageX = atoi(argv[7]);
-	scaleSubImageY = atoi(argv[8]);
-	noiseStrength = atof(argv[9]);
+	scaleSubImage = atof(argv[7]);
+	noiseStrength = atof(argv[8]);
+
+	pragma_assert(scaleSubImage>0);
+	pragma_assert(noiseStrength>=0 && noiseStrength<=1);
 
 	std::cout
 		<< "Inputs:"
@@ -110,8 +178,7 @@ int pragma::main(int argc, char *argv[])
 		<< "<Y-Pos SubImage>   : " << posSubImageY << std::endl
 		<< "<Width SubImage>   : " << widthSubImage << std::endl
 		<< "<Height SubImage>  : " << heightSubImage << std::endl
-		<< "<Scale X>          : " << scaleSubImageX << std::endl
-		<< "<Scale Y>          : " << scaleSubImageY << std::endl
+		<< "<Scalefactor>      : " << scaleSubImage << std::endl
 		<< "<NoiseStrength>    : " << noiseStrength << std::endl;
 
 		
@@ -121,41 +188,37 @@ int pragma::main(int argc, char *argv[])
 	image->write("image.png");
 
 	// Bildausschnitt ausschneiden
-	// TODO:
-	ImageManipulator imageManipulator(posSubImageX, posSubImageX + widthSubImage, posSubImageY, posSubImageY + heightSubImage);
+	// TODO: done!
+	ImageManipulator imageManipulator(posSubImageX, posSubImageX + widthSubImage , posSubImageY, posSubImageY + heightSubImage);
 	pragma::Image::ByteImagePointer subImage = imageManipulator.createSubImage(image);
 	subImage->writePNG("subImage.png");
 	// Filter aus Bildausschnitt erzeugen
-	// TODO:
+	// TODO: done!
 	pragma::Image::RealImagePointer filter(subImage);
 	// Testbild einlesen
 	pragma::Image::ByteImagePointer image2;
 	image2->read(testImageName);
 	image2->writePNG("image2.png");
 	// Mit ImageManipulator verarbeiten (Rauschen und Skalierung)
-	// TODO:
+	// TODO: done!
 	ImageManipulator imageManipulator2(noiseStrength);
 	imageManipulator2.setScaleImage(true);
-	imageManipulator2.setResolution(scaleSubImageX, scaleSubImageY);
+	imageManipulator2.setResolution(scaleSubImage*image2->xResolution(), scaleSubImage*image2->yResolution());
 
 	pragma::Image::ByteImagePointer testImage = imageManipulator2.processImage(image2);
 	testImage->writePNG("testImage.png");
 
 	// Filter mit Bild falten (inklusive Normalisierung)
-	// TODO:
+	// TODO: done!
 
-	filter->rotate180();
 	pragma::Image::RealImagePointer convolvedImage = falte(testImage, filter);
-	filter->rotate180();
 
 	// Position im gefalteten Bild mit maximaler Antwort bestimmen
-	// TODO:
+	// TODO: done!
 	int globalMax_X = 0;
 	int globalMax_Y = 0;
 	convolvedImage->findGlobalMax(globalMax_X, globalMax_Y);
 
-	globalMax_X -= filter->xResolution() - 1;
-	globalMax_Y -= filter->yResolution() - 1;
 	std::cout << "gX: " << globalMax_X << " // gY: " << globalMax_Y << std::endl;
 
 	// Filter in Testbild kopieren (sodass z.B. die ausgeschnittene Nase auf der gefundenen Nase angezeigt wird)
@@ -167,12 +230,12 @@ int pragma::main(int argc, char *argv[])
 		std::cout << "globalMax_X | globalMax_Y out of range"<< std::endl;
 	
 	// convolvedImage und finalImage auf Festplatte speichern (Konvertierung in ByteImagePointer ist erlaubt)
-	// TODO:
+	// TODO: done!
 
 	pragma::Image::ByteImagePointer store_convolvedImage(convolvedImage);
 	store_convolvedImage->writePNG("convolvedImage.png");
 
 	pragma::Image::ByteImagePointer store_finalImage(finalImage);
-	store_finalImage->writePNG("finalImage.png");
+	store_finalImage->writePNG(pragma::string("fI_s_%.3f", scaleSubImage) + pragma::string("_n_%.3f_.png", noiseStrength));
 	return 0;
 }

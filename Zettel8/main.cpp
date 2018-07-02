@@ -1,356 +1,273 @@
-// =============================================================================
-//  PRaGMA is a library of Pattern Recognition and Graph Matching Algorithms.
-// =============================================================================
-//  Copyright 2007-2014 Institut fuer Neuroinformatik, Ruhr-Universitaet Bochum
-//
-//  This file is part of PRaGMA.
-//  PRaGMA is free software: you can redistribute it and/or modify it under
-//  the terms of the GNU Lesser General Public License as published by the
-//  Free Software Foundation, either version 3 of the License, or (at your
-//  option) any later version.
-//  PRaGMA is distributed in the hope that it will be useful, but WITHOUT
-//  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-//  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
-//  License for more details.
-//  You should have received a copy of the GNU Lesser General Public License
-//  along with this program. If not, see <http://www.gnu.org/licenses/>.
-//
-// =============================================================================
-//
-//  Author:   Andreas Nilkens
-//
-//  Email:    andreas.nilkens@ini.rub.de
-//
-//  Address:  Ruhr-Universitaet Bochum
-//            Institut fuer Neuroinformatik
-//            Universitaetsstr. 150
-//            D-44801 Bochum, Germany
-//
-// ===========================================================================
-//
-//! \file     ./programs/task/Zettel8/main.cpp
-//! \ingroup  ./programs/task
-//
-// ===========================================================================
-//
-//  $HeadURL$
-//  $Revision$
-//  $Date$
-//  $Author$
-//
-// ===========================================================================
-// ===========================================================================
-
-
-// ---- local includes -------------------------------------------------------
-
 #include "pragma.h"
 
-// ---- global includes ------------------------------------------------------
+/* Hinweis:
+Die Dateinamen sind in den Listen als "Bilder/datei.jpg" angegeben. Die .exe muss sich daher im selben Ordner wie der Bilder-Ordner befinden.
+Dasselbe gilt fuer die Listen und Gesichtsgraphen. Entweder also die .exe verschieben oder die ganzen Dateien in den Ordner mit der kompilierten .exe.
 
-// ---- constants ------------------------------------------------------------
+In dieser Aufgabe geht es hauptsaechlich darum, sich in den vorhandenen Code einzuarbeiten. Daher ist die einzige zu ergaenzende Funktion der Kreuzvergleich  
+in der main() (5P). Fuer alle anderen Teilaufgaben sollen lediglich verschiedene Matching-Schedules ausprobiert und die Fragen beantwortet werden (4P + 3P + 3P).
+Die dafuer relevanten Stellen sind durch Kommentare im Code angegeben. Bis auf den Schedule selber muss nichts mehr am Code geaendert werden.
+*/
 
+// Funktionen
+void readFileList(std::string fileName,
+                  pragma::vector<std::string> &vec);
+void readImages(const std::string &fileName,
+                pragma::vector<pragma::Image::ByteImagePointer> &imageVector);
+void createModelGraphSet(const std::string fileName,
+                         pragma::GraphLab::ModelGraphSet &modelGraphSet);
+void matchOnImage(const pragma::Image::ByteImagePointer &imagePointer,
+                  const pragma::GraphLab::ModelGraphSet &modelGraphSet,
+                  pragma::Graphics::WindowPointer &matchWindowPointer,
+                  pragma::GraphLab::ModelGraphPointer &matchGraphPointer);
+pragma::REAL modelGraphSimilarity(const pragma::GraphLab::ModelGraphPointer &mgPointer1,
+                                  const pragma::GraphLab::ModelGraphPointer &mgPointer2,
+                                  int simFunction);
 
-// Funktion zum Einlesen einer Liste von Dateinamen aus einer txt-Datei. Die
-// Dateinamen werden in vecA gespeichert
-PRAGMA_VOID fileList(std::string dateiNameA, pragma::vector<std::string>& vecA)
+// ========== Main function ==========
+int pragma::main(int argc, char *argv[])
 {
-  vecA.clear();
-  FILE* f = fopen(dateiNameA.c_str(), "r");
+  cout << "Vorlesung Sehen in Mensch und Maschine Aufgabe 8\n\n";
+
+  // Parameterzahl ueberpruefen
+  if (argc != 4)
+  {
+    std::cout << "Benutzung: <Liste mit Galleriebildern> <Liste mit Probebildern> <Aehnlichkeitsfunktion (0 oder 1)>\n";
+    getchar();
+    return 0;
+  }
+
+  // Galeriebilder einlesen
+  std::string galleryName = argv[1];
+  pragma::vector<pragma::Image::ByteImagePointer> galleryVector;
+  readImages(galleryName, galleryVector);
+
+  // Probebilder einlesen
+  std::string probeName = argv[2];
+  pragma::vector<pragma::Image::ByteImagePointer> probeVector;
+  readImages(probeName, probeVector);
+
+  // Aehnlichkeitsfunktion
+  int simBool = atoi(argv[3]);
+  pragma_assert(simBool == 0 || simBool == 1);
+
+  // ModelGraphSet, ModelGraphPointer und entsprechende Fenster erstellen
+  pragma::GraphLab::ModelGraphSet modelGraphSet;
+  createModelGraphSet("bg2.txt", modelGraphSet);
+
+  pragma::vector<pragma::GraphLab::ModelGraphPointer> galleryGraphVector;
+  pragma::vector<pragma::GraphLab::ModelGraphPointer> probeGraphVector;
+
+  pragma::Graphics::WindowPointer matchWindowPointer("Match Window", 220, 10);
+  pragma::Graphics::WindowPointer imageWindowPointer("Image Window", 20, 10);
+
+  // Auf Galeriebilder matchen und Modelgraphen erstellen
+  cout << "Matching gallery... " << endl;
+  for (unsigned int i = 0; i < galleryVector.size(); i++)
+  {
+    imageWindowPointer->image(galleryVector[i]);
+    pragma::GraphLab::ModelGraphPointer modelGraphPointer;
+    matchOnImage(galleryVector[i], modelGraphSet, matchWindowPointer, modelGraphPointer);
+    galleryGraphVector.push_back(modelGraphPointer);
+    cout << std::round((double)(i + 1) / galleryVector.size() * 100) << "% ";
+  }
+  cout << "\nDone." << endl;
+
+  // Auf Probebilder matchen und Modelgraphen erstellen
+  cout << "Matching probes... " << endl;
+  for (unsigned int i = 0; i < probeVector.size(); i++)
+  {
+    imageWindowPointer->image(probeVector[i]);
+    pragma::GraphLab::ModelGraphPointer modelGraphPointer;
+    matchOnImage(probeVector[i], modelGraphSet, matchWindowPointer, modelGraphPointer);
+    probeGraphVector.push_back(modelGraphPointer);
+    cout << std::round((double)(i + 1) / probeVector.size() * 100) << "% ";
+  }
+  cout << "\nDone." << endl;
+
+  // ========== Aufgabe 1 ==========
+  // Kreuzvergleich durchfuehren (jeden Modellgraphen mit jedem Probegraphen vergleichen)
+  cout << "Starting cross-run... " << endl;
+
+  unsigned int numberOfCorrectRecognised = 0;
+
+  // probeGraphVector durchlaufen
+  for (unsigned int probeIndex = 0; probeIndex < probeGraphVector.size(); probeIndex++)
+  {
+    unsigned int bestIndex = 0;                 // Index des Bildes mit der hoechsten Aehnlichkeit
+    pragma::REAL bestSimilarity = 0.0; // Wert der hoechsten Aehnlichkeit
+
+    // Mit galleryGraphVector vergleichen (vorhandene Funktionen nutzen und darauf achten, welche Werte ausgegeben werden sollen)
+    // TODO: done!
+
+    // currentProbe = probeGraphVector.at(probeIndex)
+    for (unsigned int galleryIndex = 0; galleryIndex < galleryGraphVector.size(); galleryIndex++)
+    {
+      // currentGallery = galleryGraphVector.at(galleryIndex)
+      pragma::REAL tempResult = modelGraphSimilarity(galleryGraphVector.at(galleryIndex), probeGraphVector.at(probeIndex), simBool);
+
+      if (tempResult > bestSimilarity)
+      {
+        bestSimilarity = tempResult;
+        bestIndex = galleryIndex;
+      }
+    }
+
+    // Counter erhoehen, wenn richtig erkannt
+    if (bestIndex == probeIndex)
+      numberOfCorrectRecognised++;
+
+    // Ergebnis ausgeben
+    std::cout << "Probenbild: " << probeIndex + 1
+              << "  aehnlichstes Galeriebild: " << bestIndex + 1
+              << "  erkannt?: " << (bestIndex == probeIndex)
+              << "  Aehnlichkeit: " << bestSimilarity << std::endl;
+  }
+
+  // Erkennungsrate ausgeben
+  pragma::REAL recognitionRate = (static_cast<pragma::REAL>(numberOfCorrectRecognised) / static_cast<pragma::REAL>(probeGraphVector.size())) * 100.0;
+  std::cout << "\nRecognition Rate: " << numberOfCorrectRecognised << " / " << probeGraphVector.size() << " = " << recognitionRate << "%" << endl
+            << endl;
+  return 0;
+}
+
+// Einlesen der Liste von Dateinamen aus der txt-Datei und Speichern in Vector fileList
+void readFileList(std::string fileName, pragma::vector<std::string> &fileList)
+{
+  fileList.clear();
+
+  FILE *f = fopen(fileName.c_str(), "r");
   char bufferL[500];
+
   while (!feof(f))
   {
-    if( NULL != fgets(bufferL, sizeof(bufferL), f) )
+    if (NULL != fgets(bufferL, sizeof(bufferL), f))
     {
-      char* pCL = strchr(bufferL,'\n');
-      if( NULL != pCL )
+      char *pCL = strchr(bufferL, '\n');
+      if (NULL != pCL)
         *pCL = '\0';
-      vecA.push_back(bufferL);
+      fileList.push_back(bufferL);
     }
   }
   fclose(f);
 }
 
-
-// Funktion zur Berechnung der Ähnlichkeit zweier Gesichtsgraphen
-pragma::REAL modelGraphSimilarity
-(
-  PRAGMA_CONST pragma::GraphLab::ModelGraphPointer& mg1PointerA,
-  PRAGMA_CONST pragma::GraphLab::ModelGraphPointer& mg2PointerA
- )
+// Einlesen mehrerer Bilder aus Datei fileName und Abspeichern in imageVector
+void readImages(const std::string &fileName, pragma::vector<pragma::Image::ByteImagePointer> &imageVector)
 {
-  //pragma::FeaSt::Cubic::SimFct::AbsPhaseSimFctPointer absSimFctPointerL;
-  pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer absSimFctPointerL;
+  // Datei einlesen und Inhalt in fileList abspeichern
+  pragma::vector<std::string> fileList;
+  readFileList(fileName, fileList);
 
-  // iterieren ueber alle knoten
-  pragma::REAL similarityL = 0.0;
-  pragma::UINT16 numberOfUsedNodesL = 0;
-  for (pragma::UINT16 nodeL = 0; nodeL < mg1PointerA -> numberOfNodes(); nodeL ++)
+  // Zugehoerige Bilder einlesen und Speichern in Vector imageVector
+  cout << "Reading " << fileList.size() << " images from " << fileName << "... ";
+  for (pragma::vector<std::string>::const_iterator pFilename = fileList.begin(); pFilename != fileList.end(); pFilename++)
   {
-    PRAGMA_CONST pragma::GraphLab::ModelNodeInfoPointer& nodeInfoPointer1L
-      = mg1PointerA -> node(nodeL)->modelPayload();
-    PRAGMA_CONST pragma::GraphLab::ModelNodeInfoPointer& nodeInfoPointer2L
-      = mg2PointerA -> node(nodeL)->modelPayload();
-
-
-    similarityL += (..)
-    ++numberOfUsedNodesL;
+    pragma::Image::ByteImagePointer byteImagePointer;
+    byteImagePointer->read(*pFilename);
+    imageVector.push_back(byteImagePointer);
   }
-
-  return similarityL / static_cast<pragma::REAL>(numberOfUsedNodesL);
+  cout << "done." << endl;
 }
 
-
-// Funktion zum Einlesen eines Sets von Gesichtsgraphen
-PRAGMA_VOID createModelGraphSet
-(
-  const std::string fileNameA,
-  pragma::GraphLab::ModelGraphSet& modelGraphSetA
-)
+// Einlesen eines Sets von Gesichtsgraphen
+void createModelGraphSet(const std::string fileName, pragma::GraphLab::ModelGraphSet &modelGraphSet)
 {
-  pragma::vector<std::string> fileListL;
-  fileList(fileNameA, fileListL);
+  // Datei einlesen und Inhalt in fileList abspeichern
+  pragma::vector<std::string> fileList;
+  readFileList(fileName, fileList);
 
-  for (pragma::vector<std::string>::const_iterator pFilenameL=fileListL.begin();
-       pFilenameL != fileListL.end();
-       pFilenameL ++)
+  // Zugehoerige Gesichtsgraphen einlesen und in modelGraphSet speichern
+  cout << "Reading " << fileList.size() << " graphs from " << fileName << "... ";
+  for (pragma::vector<std::string>::const_iterator pFilename = fileList.begin(); pFilename != fileList.end(); pFilename++)
   {
-    pragma::GraphLab::GraphPointer graphPointerL;
-    graphPointerL.read(*pFilenameL);
-    pragma::GraphLab::ModelGraphPointer modelGraphPointerL(graphPointerL);
-    modelGraphSetA.push_back(modelGraphPointerL);
+    pragma::GraphLab::GraphPointer graphPointer;
+    graphPointer.read(*pFilename);
+    pragma::GraphLab::ModelGraphPointer modelGraphPointer(graphPointer);
+    modelGraphSet.push_back(modelGraphPointer);
   }
+  cout << "done." << endl;
 }
 
-
-// Funktion zum Detektieren eines Gesichts auf imagePointerA mittels verschiedener Moves
-// und zum Auslesen des entsprechenden Gesichtsgraphen an der bestimmten Stelle
-PRAGMA_VOID matchOnImage(
-  const pragma::Image::ByteImagePointer& imagePointerA,
-  const pragma::GraphLab::ModelGraphSet& modelGraphSetA,
-  pragma::Graphics::WindowPointer& matchWindowPointerA,
-  pragma::GraphLab::ModelGraphPointer& matchGraphPointerA)
+// Detektieren eines Gesichts auf imagePointer mittels verschiedener Moves und Auslesen des entsprechenden Gesichtsgraphen an der entsprechenden Stelle
+void matchOnImage(const pragma::Image::ByteImagePointer &imagePointer,
+                  const pragma::GraphLab::ModelGraphSet &modelGraphSet,
+                  pragma::Graphics::WindowPointer &matchWindowPointer,
+                  pragma::GraphLab::ModelGraphPointer &matchGraphPointer)
 {
+  // BunchModelGraphPointer erstellen
+  pragma::GraphLab::BunchModelGraphPointer bunchGraphPointer(modelGraphSet);
 
-  pragma::GraphLab::BunchModelGraphPointer bunchGraphPointerL(modelGraphSetA);
+  // FeaStImagePointer erstellen
+  pragma::Trafo::GaborTrafoPointer trafoPointer;
+  pragma::Trafo::ComplexTrafoImagePointer complexTrafoImagePointer;
+  trafoPointer->transform(imagePointer, complexTrafoImagePointer);
+  pragma::FeaSt::FeaStImagePointer feastImagePointer(pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, complexTrafoImagePointer);
 
-  // FeaSt Image Erstellen -----------------------------------------------------
+  // Matching
+  pragma::EGM::MatchingSchedulePointer matchingSchedulePointer;
 
-  pragma::Trafo::GaborTrafoPointer trafoPointerL;
-  pragma::Trafo::ComplexTrafoImagePointer  complexTrafoImagePointerL;
+  // ========== Aufgabe 2 (Teil 1) ==========
+  // Welche der beiden Aehnlichkeitsfunktionen (AbsSimFctPointer, AbsPhaseSimFctPointer) ist fuer die drei Moves besser geeignet?
+  // TODO:
 
-  trafoPointerL->transform(imagePointerA, complexTrafoImagePointerL);
-  pragma::FeaSt::FeaStImagePointer feaStImagePointerL(
-    pragma::FeaSt::CUBIC_ABS_PHASE_FEAST, complexTrafoImagePointerL);
+  // ========== Aufgabe 3 ==========
+  // Vorgegebenen Matching-Schedule und zwei weitere ausprobieren und Erkennungsraten fuer zwei oder mehr Kombinationen von Galerie- und Probe-Liste angeben
+  // Alle benutzten Matching-Schedules bitte auskommentiert im Code lassen
+  // TODO:
 
-  // Matching ------------------------------------------------------------------
+  /* Moves in der Dokumentation (enthaelt Erklaerungen zu den Argumenten):
+	- GlobalTranslationMove: html/classpragma_1_1EGM_1_1GlobalTranslationMoveRep.html
+	- ScalingMove: html/classpragma_1_1EGM_1_1ScalingMoveRep.html
+	- LocalTranslationMove: html/classpragma_1_1EGM_1_1LocalTranslationMoveRep.html
+	*/
 
-  pragma::EGM::MatchingSchedulePointer matchingSchedulePointerL;
+  // Vorgegebener Matching-Schedule
+  matchingSchedulePointer->push_back(pragma::EGM::GlobalTranslationMovePointer(pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(), 10, pragma::EGM::COARSE_DISPLAY_MOVE));
+  matchingSchedulePointer->push_back(pragma::EGM::GlobalTranslationMovePointer(pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(), 2, 10, pragma::EGM::COARSE_DISPLAY_MOVE));
+  matchingSchedulePointer->push_back(pragma::EGM::ScalingMovePointer(pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(), 0.8, 5, 0.1, pragma::EGM::COARSE_DISPLAY_MOVE));
+  matchingSchedulePointer->push_back(pragma::EGM::ScalingMovePointer(pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(), 0.95, 3, 0.05, pragma::EGM::COARSE_DISPLAY_MOVE));
+  matchingSchedulePointer->push_back(pragma::EGM::LocalTranslationMovePointer(pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(), 1, 1, 0.0, pragma::FALSE, pragma::EGM::COARSE_DISPLAY_MOVE));
 
-  matchingSchedulePointerL->push_back
-  (
-    pragma::EGM::GlobalTranslationMovePointer
-    (
-      pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(),
-      10, // step width
-      pragma::EGM::COARSE_DISPLAY_MOVE
-    )
-  );
-  matchingSchedulePointerL->push_back
-  (
-    pragma::EGM::GlobalTranslationMovePointer
-    (
-      pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(),
-      2, // step width
-      10, // half width of local search area
-      pragma::EGM::COARSE_DISPLAY_MOVE
-    )
-  );
-  matchingSchedulePointerL->push_back
-  (
-    pragma::EGM::ScalingMovePointer
-    (
-      pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(),
-      0.8,
-      5,
-      0.1,
-      pragma::EGM::COARSE_DISPLAY_MOVE
-    )
-  );
-  matchingSchedulePointerL->push_back
-  (
-    pragma::EGM::ScalingMovePointer
-    (
-      pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(),
-      0.95,
-      3,
-      0.05,
-      pragma::EGM::COARSE_DISPLAY_MOVE
-    )
-  );
-  matchingSchedulePointerL->push_back
-  (
-    pragma::EGM::LocalTranslationMovePointer
-    (
-      pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer(),
-      1, // Step width in both directions.
-      1, // Half size of local search area in both directions.
-      0.0, // Don't account for topology cost.
-      pragma::FALSE, // Is irrelevant if topology cost is zero.
-      pragma::EGM::COARSE_DISPLAY_MOVE
-    )
-  );
-
-
-  pragma::EGM::MatcherPointer matcherPointerL;
-
-  matcherPointerL->match
-  ( bunchGraphPointerL,
-    feaStImagePointerL,
-    matchingSchedulePointerL,
-    matchWindowPointerA,
-    imagePointerA,
-    pragma::EGM::MOVE_DISPLAY_MODE_UNDEFINED,
-    pragma::TRUE);
-
-  matchGraphPointerA = bunchGraphPointerL;
-
-  //pragma::GraphLab::GraphPointer(matchGraphPointerA).write("test.xml");
+  pragma::EGM::MatcherPointer matcherPointer;
+  matcherPointer->match(bunchGraphPointer, feastImagePointer, matchingSchedulePointer, matchWindowPointer, imagePointer, pragma::EGM::MOVE_DISPLAY_MODE_UNDEFINED, pragma::TRUE);
+  matchGraphPointer = bunchGraphPointer;
 }
 
-
-
-// Funktion zum Einlesen mehrerer Bilder und Abspeichern derselben in vectorOfImagesA,
-// wobei die Dateinamen der Bilder in der Datei mit Namen fileNameA stehen
-PRAGMA_VOID readImages(
-  const std::string& fileNameA,
-  pragma::vector<pragma::Image::ByteImagePointer>& vectorOfImagesA)
+//  Berechnung der Aehnlichkeit zweier Gesichtsgraphen
+pragma::REAL modelGraphSimilarity(const pragma::GraphLab::ModelGraphPointer &mgPointer1,
+                                  const pragma::GraphLab::ModelGraphPointer &mgPointer2,
+                                  int simFunction)
 {
-  pragma::vector<std::string> fileListL;
-  fileList(fileNameA, fileListL);
-  for (pragma::vector<std::string>::const_iterator pFilenameL=fileListL.begin();
-       pFilenameL != fileListL.end();
-       pFilenameL ++)
+  // ========== Aufgabe 2 (Teil 2) ==========
+  // Welche Aehnlichkeitsfunktion zum Vergleichen der Identitaeten ist die bessere Wahl?
+  // TODO:
+
+  // Aehnlichkeitsfunktion auswaehlen (0 = Phase, 1 = Absolutwert)
+  pragma::FeaSt::SimFctPointer simFctPointer;
+  if (simFunction == 0)
+    simFctPointer = pragma::FeaSt::Cubic::SimFct::AbsPhaseSimFctPointer();
+  else
+    simFctPointer = pragma::FeaSt::Cubic::SimFct::AbsSimFctPointer();
+
+  pragma::REAL similarity = 0.0;
+  pragma::UINT16 numberOfUsedNodes = 0;
+
+  // Ueber alle Knoten iterieren
+  for (pragma::UINT16 nodeL = 0; nodeL < mgPointer1->numberOfNodes(); nodeL++)
   {
-    pragma::Image::ByteImagePointer byteImagePointerL;
-    byteImagePointerL -> read(*pFilenameL);
-    vectorOfImagesA.push_back(byteImagePointerL);
+    const pragma::GraphLab::ModelNodeInfoPointer &nodeInfoPointer1 = mgPointer1->node(nodeL)->modelPayload();
+    const pragma::GraphLab::ModelNodeInfoPointer &nodeInfoPointer2 = mgPointer2->node(nodeL)->modelPayload();
+
+    similarity += simFctPointer->similarity(nodeInfoPointer1->feaStPointer(), nodeInfoPointer2->feaStPointer());
+    numberOfUsedNodes++;
   }
+  return similarity / static_cast<pragma::REAL>(numberOfUsedNodes);
 }
 
+// ========== Aufgabe 4 ==========
+// Eine der sechs Listen als Galerie waehlen (Wahl begruenden)
+// TODO:
 
-/*************************************************************************//*!
-
-          PRAGMA main function.
-
-\param    argc                  number of command line arguments.
-
-\param    argv                  vector of command line arguments.
-
-\retval   0                     on success.
-
-\retval   -1                    on failure.
-
-\author   Andreas Nilkens
-
-\date     2017-04-26
-
-*//**************************************************************************/
-int pragma::main( int argc, char *argv[] )
-//----------------------------------------------------------------------------
-{
-  std::cout << "Vorlesung Sehen in Mensch und Maschine Aufgabe 8\n\n";
-
-  if (argc!=3)
-  {
-    std::cout << "Usage:\n" << argv[0] << " <gallery> <probe>\n";
-
-    return 0;
-  } // if
-
-  std::string galleryNameL(argv[1]);
-  std::string probeNameL(argv[2]);
-
-  // Gallery Bilder einlesen ---------------------------------------------------
-
-  pragma::vector<pragma::Image::ByteImagePointer> vectorOfGalleryImagesL;
-  readImages(galleryNameL, vectorOfGalleryImagesL);
-  // Proben Bilder einlesen ----------------------------------------------------
-
-  pragma::vector<pragma::Image::ByteImagePointer> vectorOfProbeImagesL;
-  readImages(probeNameL, vectorOfProbeImagesL);
-
-
-  // ModelGraphSet erstellen ---------------------------------------------------
-
-  pragma::GraphLab::ModelGraphSet modelGraphSetL;
-  createModelGraphSet("bg2.txt", modelGraphSetL);
-
-
-  // Auf Gallery Bilder matchen und Modelgraphen erstellen ---------------------
-
-  pragma::vector<pragma::GraphLab::ModelGraphPointer> vectorOfGalleryGraphsL;
-  pragma::vector<pragma::GraphLab::ModelGraphPointer> vectorOfProbeGraphsL;
-
-  pragma::Graphics::WindowPointer matchWindowPointerL("Match Window",220,10);
-
-  pragma::Graphics::WindowPointer imageWindowPointerL("Image Window",20,10);
-
-  for (pragma::UINT32 iL = 0; iL < vectorOfGalleryImagesL.size(); iL++)
-  {
-    imageWindowPointerL->image(vectorOfGalleryImagesL[iL]);
-    pragma::GraphLab::ModelGraphPointer modelGraphPointerL;
-    matchOnImage(vectorOfGalleryImagesL[iL], modelGraphSetL,
-                 matchWindowPointerL, modelGraphPointerL);
-    vectorOfGalleryGraphsL.push_back(modelGraphPointerL);
-  }
-
-  // Auf Probe Bilder matchen und Modelgraphen erstellen -----------------------
-
-  for (pragma::UINT32 iL = 0; iL < vectorOfProbeImagesL.size(); iL++)
-  {
-    imageWindowPointerL->image(vectorOfProbeImagesL[iL]);
-    pragma::GraphLab::ModelGraphPointer modelGraphPointerL;
-    matchOnImage(vectorOfProbeImagesL[iL], modelGraphSetL,
-                 matchWindowPointerL, modelGraphPointerL);
-    vectorOfProbeGraphsL.push_back(modelGraphPointerL);
-  }
-
-  // Cross Run durchführen (also jeden Modellgraphen mit jedem Probegraphen vergleichen) -------------------------------
-
-  std::cout << "cross run" << std::endl;
-
-  (...)
-
-  for (pragma::UINT32 probeIndexL= 0;
-       probeIndexL < vectorOfProbeGraphsL.size();
-       probeIndexL ++)
-  {
-
-
-
-    (...)
-
-
-    if (bestIndexL == probeIndexL)
-      numberOfCorrectlyRecognisedL ++;
-
-    std::cout << "Probenbild: " << probeIndexL + 1
-              << "  aehnlichstes Galeriebild: " << bestIndexL + 1
-              << "  erkannt?: " << (bestIndexL == probeIndexL)
-              << "  Aehnlichkeit: " << bestSimL << std::endl;
-
-  }
-
-  std::cout << "Recognition Rate: "
-            << numberOfCorrectlyRecognisedL << " / "
-            << vectorOfProbeGraphsL.size() << " = "
-            << (static_cast<pragma::REAL>(numberOfCorrectlyRecognisedL) /
-                static_cast<pragma::REAL>(vectorOfProbeGraphsL.size())) * 100.0 << "%\n";
-
-
-  return 0;
-} // method
-
-
-// ====== END OF FILE ========================================================
+// Erkennungsraten auf den uebrigen funf Listen angeben (besten Matching-Schedule und zu bevorzugende Ahenlichkeitsfunktion verwenden)
+// TODO:

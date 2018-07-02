@@ -63,10 +63,10 @@ include(${PRAGMA_MAKE_HOME}/Cmakefile.libs)
 #  pragma_executable(zettel6 Zettel6)
 
 # add Day7
-  pragma_executable(zettel7 Zettel7)
+#  pragma_executable(zettel7 Zettel7)
 
 # add Day8
-#  pragma_executable(zettel8 Zettel8)
+  pragma_executable(zettel8 Zettel8)
 
 
 # that's it
