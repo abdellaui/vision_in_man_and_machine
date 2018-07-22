@@ -1,3 +1,18 @@
+/*
+Abdullah Sahin
+Tolga Akkiraz
+*/
+// Bewertung:  5  +  3  +  3  +  3  =  14
+// -----------------------------------------------------------------------------
+// Maximum:    5  +  4  +  3  +  3  =  15
+// -----------------------------------------------------------------------------
+// @Error: Markiert Fehler mit Punktabzug.
+// @Warning: Markiert Fehler, die zukünftig zu Punktabzug führen können.
+// @Note: Markiert Anmerkungen und Hinweise.
+
+
+
+
 #include "pragma.h"
 
 /* Hinweis:
@@ -201,7 +216,11 @@ PRAGMA_VOID matchOnImage(const pragma::Image::ByteImagePointer &imagePointer, co
 		ScalingMove = AbsSimFctPointer
 		LocalTranslationMove = AbsSimFctPointer
 		
-		laut Vorlesung 09 Seite 9
+		laut Vorlesung 09 Seite 9			
+	
+	// @Error: Das Reicht hier als Erklärung nicht ganz aus... gefragt war entweder eine richtige Erklärung
+	// - 1     oder einige Erkennungsraten, die zeigen wie diese Aussage zustande kommt 
+		
 	*/
 	// ========== Aufgabe 3 ==========
 	// Vorgegebenen Matching-Schedule und zwei weitere ausprobieren und Erkennungsraten fuer zwei oder mehr Kombinationen von Galerie- und Probe-Liste angeben
